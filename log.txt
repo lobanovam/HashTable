@@ -1,0 +1,20 @@
+--------------------START LOGS--------------------
+
+#done readFile()
+
+#done SplitOnWords()
+
+#done tableCTOR()
+
+#done SetHashTable()
+
+#done TableSearch()
+
+#done TableToCsv()
+
+#done textDTOR
+
+#done tableDTOR
+
+
+--------------------END LOGS--------------------
