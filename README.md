@@ -16,5 +16,9 @@ To solve collisions (when hashFunc(key) = certainValue for more than one key) i 
 In separate chaining, the process involves building a linked list with key–value pair for each search array index. 
 The collided items are chained together through a single linked list, which can be traversed to access the item with a unique search key.
 
+<img src="png's/hashTableExample.png">
+
+For more detailed information please visit the link below:
+https://en.wikipedia.org/wiki/Hash_table
 
 
