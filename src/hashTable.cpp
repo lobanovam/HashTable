@@ -10,13 +10,42 @@ Node* TableSearch(HashTable * hashTable, char* key, size_t (*hashFunc)(const cha
 void TableToCsv(HashTable * hashTable, FILE * CsvFile);
 void ClearList(Item* item);
 
-//const char* InputFilename = "inputText.txt";
-const char* InputFilename = "Text.txt";
+//const char* InputFilename = "./data/inputText.txt";
+const char* InputFilename = "./data/Text.txt";
 const char* InputMode = "rb";
-const char* CsvFilename = "hashTable.csv";
 const char* CsvMode = "w";
 
-#define HASH_FUNC rorHash
+enum HashFuncsEnum {
+    ONE_HASH,
+    ASCII_HASH,
+    STRLEN_HASH,
+    ASCIISUM_HASH,
+    ROL_HASH,
+    ROR_HASH,
+    FAQ6_HASH
+};
+
+const char* CsvFilenames[] = {
+    "./tabulars/oneHash.csv",
+    "./tabulars/asciiHash.csv",
+    "./tabulars/strlenHash.csv",
+    "./tabulars/asciiSumHash.csv",
+    "./tabulars/rolHash.csv",
+    "./tabulars/rorHash.csv",
+    "./tabulars/FAQ6Hash.csv",
+};
+
+size_t (*HashFuncsArr[])(const char * word) = {
+    OneHash,
+    AsciiHash,
+    StrlenHash,
+    AsciiSumHash,
+    rolHash,
+    rorHash,
+    FAQ6Hash
+};
+
+const int HASH_FUNC = FAQ6_HASH;
 
 int main() {
     log("--------------------START LOGS--------------------\n\n");
@@ -35,10 +64,13 @@ int main() {
     tableCTOR(&hashTable, text.wordsCt/15 );
     log("#done tableCTOR()\n\n");
 
-    SetHashTable(&hashTable, &text, HASH_FUNC);
+    
+    size_t (*hashFunc)(const char* word) = HashFuncsArr[HASH_FUNC];
+
+    SetHashTable(&hashTable, &text, hashFunc);
     log("#done SetHashTable()\n\n");
 
-    Node* node = TableSearch(&hashTable, "misha", HASH_FUNC);
+    Node* node = TableSearch(&hashTable, "misha", hashFunc);
     log("#done TableSearch()\n\n");
 
     // if (node) {
@@ -47,9 +79,7 @@ int main() {
     // else 
     //     log("not found\n");
     
-
-    FILE* CsvFile = NULL;
-    CsvFile = openFile(CsvFilename, CsvMode);
+    FILE* CsvFile = openFile(CsvFilenames[HASH_FUNC], CsvMode);
     TableToCsv(&hashTable, CsvFile);
     log("#done TableToCsv()\n\n");
 
@@ -195,5 +225,6 @@ void ClearList(Item* item) {
     }
     free(node);
 }
+
 
 

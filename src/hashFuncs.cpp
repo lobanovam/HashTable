@@ -41,6 +41,24 @@ size_t rorHash(const char * word) {
     return hash;
 }
 
+size_t FAQ6Hash(const char * word) {
+
+    size_t hash = 0;
+
+    for (; *word; word++)
+    {
+        hash += (unsigned char)(*word);
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
+    }
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+
+    return hash;
+
+}
+
 size_t RorFunc (size_t num, int shift) {                                 // 011000001 ---> 10110000 
     return (num >> shift) | (num << (sizeof (uint32_t) - shift));
 }

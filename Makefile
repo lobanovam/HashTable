@@ -15,3 +15,6 @@ all: $(OBJ)
 
 clear: 
 	rm -f ./src/build/*.o main
+	
+CSVclear:
+	rm -f *.csv
