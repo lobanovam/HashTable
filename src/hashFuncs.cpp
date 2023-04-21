@@ -1,4 +1,4 @@
-#include "hashTable.hpp"
+#include "./include/hashFuncs.hpp"
 
 size_t OneHash(const char * word) {
     return 1;

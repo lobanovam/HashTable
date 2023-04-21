@@ -8,33 +8,15 @@
 #include <assert.h>
 #include <ctype.h>
 
-typedef struct HashTable {
-    struct Item * tableItems;
-    size_t size;
-} HashTable;
-
-typedef struct Item {
-    struct Node * node;
-    size_t peers;
-} Item;
-
-typedef struct Node {
-    char * string; 
-    struct Node* next;
-} Node;
+typedef struct HashTable HashTable;
+typedef struct Node Node;
 
 
-//________________________________HashFuncs()
-size_t OneHash(const char * word);
-size_t AsciiHash(const char * word);
-size_t StrlenHash(const char * word);
-size_t AsciiSumHash(const char * word);
-size_t rolHash(const char * word);
-size_t rorHash(const char * word);
-size_t FAQ6Hash(const char * word);
+HashTable * tableCTOR(size_t size, size_t (*hashFunc)(const char * word));
+void tableDTOR(HashTable * hashTable);
+void TableInsert(HashTable * hashTable, const char * str);
+Node* TableSearch(HashTable * hashTable, const char* key);
+void TableToCsv(HashTable * hashTable, FILE * CsvFile);
 
-size_t RorFunc (size_t num, int shift);
-size_t RolFunc (size_t num, int shift);
-//___________________________________________
 
 #endif 
