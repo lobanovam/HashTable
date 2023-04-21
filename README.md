@@ -70,9 +70,7 @@ size_t AsciiHash(const char * word) {
 }
 ~~~
 <img src="diagrams/AsciiHash.png" width = 60%>
-Better than OneHash but still quite bad.
-Some weird values in ~1400 area are caused by not suitable encoding.
-
+Better than OneHash but still quite bad. 
 ### 3. StrlenHash
 Returns the lenght of given string.
 ~~~C++
