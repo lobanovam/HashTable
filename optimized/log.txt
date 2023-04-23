@@ -4,25 +4,22 @@
 
 #done SplitOnWords()
 
-#done wordsTo32bit()
-
 #done tableCTOR()
 
 #done SetHashTable()
 
------
- unoptimized search is 1.342318
------
-
------
- asm insertion search is 1.027952
------
-
------
- asm rol search is 1.240992
------
-
-found str
+---
+ ordinary rol time: 3.018622
+---
+---
+ with asm rol time: 3.054996
+---
+---
+ with asm insertion time: 2.958471
+---
+---
+ full asm _RolHash time: 3.002996
+---
 #done TableToCsv()
 
 #done textDTOR

@@ -8,8 +8,16 @@
 #include <assert.h>
 #include <ctype.h>
 
-typedef struct HashTable HashTable;
-typedef struct Node Node;
+typedef struct HashTable {
+    struct Item * tableItems;
+    size_t (*hashFunc)(const char * word);
+    size_t size;
+} HashTable;
+
+typedef struct Node {
+    char * string; 
+    struct Node* next;
+} Node;
 
 
 HashTable * tableCTOR(size_t size, size_t (*hashFunc)(const char * word));
@@ -19,11 +27,7 @@ Node* TableSearch(HashTable * hashTable, const char * key);
 void TableToCsv(HashTable * hashTable, FILE * CsvFile);
 void IndexDump(HashTable * hashTable, const char * key);
 
-typedef struct HashTable {
-    struct Item * tableItems;
-    size_t (*hashFunc)(const char * word);
-    size_t size;
-} HashTable;
+
 
 
 #endif 

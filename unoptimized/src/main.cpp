@@ -2,6 +2,7 @@
 #include "./include/log.hpp"
 #include "./include/hashFuncs.hpp"
 
+
 void SetHashTable(HashTable * hashTable, Text * text);
 
 //const char* InputFilename = "./textData/inputText.txt";
@@ -39,7 +40,7 @@ size_t (*HashFuncsArr[])(const char * word) = {
     FAQ6Hash
 };
 
-const int HASH_FUNC =ASCII_HASH;
+const int HASH_FUNC = ROL_HASH;
 
 int main() {
     log("--------------------START LOGS--------------------\n\n");
@@ -56,16 +57,14 @@ int main() {
     SplitOnWords(&text);
     log("#done SplitOnWords()\n\n");
 
-    HashTable * hashTable = tableCTOR(text.wordsCt/15, HashFuncsArr[HASH_FUNC]);
+    HashTable * hashTable = tableCTOR(text.wordsCt / 15, HashFuncsArr[HASH_FUNC]);
     log("#done tableCTOR()\n\n");
 
     SetHashTable(hashTable, &text);
     log("#done SetHashTable()\n\n");
 
-    // for (size_t i = 0; i < 10000; i++) {
-    //     Node* node = TableSearch(hashTable, "misha");
-    //     log("#(%zu) done TableSearch()\n\n", i);
-    // }
+    
+    Node* node = TableSearch(hashTable, "sasha");
 
     // if (node) {
     //     //log("found str is %s\n", node->string);

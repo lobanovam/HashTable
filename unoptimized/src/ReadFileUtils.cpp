@@ -11,6 +11,7 @@ void readFile(Text* text, FILE* read) {
     fseek (read, 0L, SEEK_SET);
 
     text->buffer = (char*) (calloc(fileLen, sizeof(char)));
+    assert(text->buffer != NULL);
 
     text->buffSize = fileLen;
     fread(text->buffer, sizeof(char), fileLen, read);
@@ -70,6 +71,7 @@ void wordsResize(Text * text, size_t size) {
 
     assert(text != NULL);
     text->words = (char**) realloc(text->words, size * sizeof(char*));
+    assert(text->words != NULL);
     
     if (!text->words) {
         printf("ERROR: realloc error in wordsResize\n");

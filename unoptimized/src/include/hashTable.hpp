@@ -17,6 +17,7 @@ void tableDTOR(HashTable * hashTable);
 void TableInsert(HashTable * hashTable, const char * str);
 Node* TableSearch(HashTable * hashTable, const char* key);
 void TableToCsv(HashTable * hashTable, FILE * CsvFile);
+void IndexDump(HashTable * hashTable, const char * key);
 
 
 #endif 

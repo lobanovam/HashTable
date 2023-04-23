@@ -1,8 +1,8 @@
 CC = g++
 IFLAGS = -I./src/include/
-FLAGS = -fno-omit-frame-pointer -no-pie -std=c++14 -mavx2 -mavx
+FLAGS = -fno-omit-frame-pointer -no-pie -std=c++14 -mavx2 -mavx -O2
 
-SRC = ./src/main.cpp ./src/hashTable.cpp ./src/hashFuncs.cpp ./src/ReadFileUtils.cpp ./src/RolFunc.asm
+SRC = ./src/main.cpp ./src/hashTable.cpp ./src/hashFuncs.cpp ./src/ReadFileUtils.cpp ./src/RolFunc.asm ./src/RolHash.asm
 
 OBJ_TEMP  = $(subst ./src/, ./src/build/, $(SRC))
 OBJ_TEMP1 = $(subst .cpp,.o, $(OBJ_TEMP))
@@ -15,7 +15,7 @@ all: $(OBJ)
 	mkdir -p ./src/build
 	$(CC) $(FLAGS) $(IFLAGS) -c  $^ -o $@	   # $@ - всё что слева 
 
-./src/build/RolFunc.o: ./src/RolFunc.asm
+./src/build/%.o: ./src/%.asm
 	nasm -f elf64 -o  $@  $^
 
 clear: 

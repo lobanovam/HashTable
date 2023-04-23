@@ -1,18 +1,16 @@
 #include "./include/hashTable.hpp"
 #include "./include/defines.hpp"
+#include <immintrin.h>
 
 typedef struct Item {
     struct Node * node;
     size_t peers;
 } Item;
 
-typedef struct Node {
-    char * string; 
-    struct Node* next;
-} Node;
 
 static void ClearList(Item* item);
 static Node* CreateNode(const char * str);
+int avxCmp(const char* str1, const char* str2);
 
 HashTable * tableCTOR(size_t size, size_t (*hashFunc)(const char * word)) {
 
@@ -69,9 +67,6 @@ Node* TableSearch(HashTable * hashTable, const char* key) {
     size_t hashVal = hashTable->hashFunc(key);
     size_t index = hashVal % hashTable->size;
 
-    if (hashTable->tableItems[index].peers == 1) {
-        return hashTable->tableItems[index].node;
-    }
     Node* node =  hashTable->tableItems[index].node;
 
     while (node) {
@@ -80,7 +75,7 @@ Node* TableSearch(HashTable * hashTable, const char* key) {
             if (!strcmp((const char* )node->string, key))
                 break;
         #else
-            if (!memcmp((const char*)node->string, key, 32))
+            if (!avxCmp((const char*)node->string, key))
                 break;
         #endif 
         node = node->next;
@@ -105,7 +100,6 @@ static Node* CreateNode(const char * str) {
         assert(node->string != NULL);
         memcpy(node->string, str, 32);
     #endif
-
     
     //printf("created node with str %s\n", node->string);
     node->next = NULL;
@@ -114,6 +108,7 @@ static Node* CreateNode(const char * str) {
 }
 
 void tableDTOR(HashTable * hashTable) {
+
     assert(hashTable != NULL);
 
     for (size_t i = 0; i < hashTable->size; i++) {
@@ -128,6 +123,7 @@ void tableDTOR(HashTable * hashTable) {
 }
 
 static void ClearList(Item* item) {
+
     assert(item != NULL);
 
     Node* node = item->node;
@@ -171,6 +167,22 @@ void IndexDump(HashTable * hashTable, const char * key) {
         node = node->next;
     }
     printf("\n");
+}
+
+int avxCmp(const char* str1, const char* str2) {
+
+    __m256i ar1 = _mm256_loadu_si256 ((__m256i *) str1);
+    __m256i ar2 = _mm256_loadu_si256 ((__m256i *) str2);
+
+    __m256i cmp = _mm256_cmpeq_epi8 (ar1, ar2);
+    int mask = _mm256_movemask_epi8 (cmp);
+    //printf("mask is %x\n", mask);
+
+    if (mask == 0xffffffff) {
+        return 0;
+    }
+
+    return 1;
 }
 
 

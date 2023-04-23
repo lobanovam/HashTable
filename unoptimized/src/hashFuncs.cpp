@@ -1,5 +1,8 @@
 #include "./include/hashFuncs.hpp"
 
+size_t RorFunc (size_t num, int shift);
+size_t RolFunc (size_t num, int shift);
+
 size_t OneHash(const char * word) {
     return 1;
 }
