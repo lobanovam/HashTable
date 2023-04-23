@@ -4,10 +4,25 @@
 
 #done SplitOnWords()
 
+#done wordsTo32bit()
+
 #done tableCTOR()
 
 #done SetHashTable()
 
+-----
+ unoptimized search is 1.342318
+-----
+
+-----
+ asm insertion search is 1.027952
+-----
+
+-----
+ asm rol search is 1.240992
+-----
+
+found str
 #done TableToCsv()
 
 #done textDTOR

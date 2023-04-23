@@ -1,4 +1,5 @@
 #include "ReadFileUtils.hpp"
+#include "defines.hpp"
 
 const size_t defaultWordCt = 100; 
 
@@ -51,7 +52,7 @@ void SplitOnWords(Text * text) {
             i++;
         }
         *(text->buffer + i) = '\0';
-        printf("got %s\n", text->words[wordsCt]);
+        //printf("got %s\n", text->words[wordsCt]);
 
         wordsCt++;
 
@@ -70,18 +71,28 @@ void wordsResize(Text * text, size_t size) {
 
     assert(text != NULL);
     text->words = (char**) realloc(text->words, size * sizeof(char*));
+    assert(text->words != NULL);
     
     if (!text->words) {
         printf("ERROR: realloc error in wordsResize\n");
     }
     text->wordsCt = size;
-    printf("resize completed\n");
+    //printf("resize completed\n");
 }
 
 void textDTOR(Text * text) {
+    
     assert(text != NULL);
     assert(text->buffer != NULL);
     assert(text->words != NULL);
+
+    #ifdef _32WORD
+        size_t wordsCt = text->wordsCt;
+
+        for (size_t i = 0; i < wordsCt; i++) {
+            free(text->words[i]);
+        }
+    #endif
 
     free(text->words);
     free(text->buffer);
