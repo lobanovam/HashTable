@@ -119,7 +119,7 @@ size_t rolHash(const char * word) {
 }
 
 size_t RolFunc (size_t num, int shift) {                                 // 10011000 ----> 0011001
-    return (num << shift) | (num >> (sizeof (uint32_t) - shift));
+    return (num << shift) | (num >> (sizeof (num) * 8 - shift));
 }
 ~~~
 
@@ -143,7 +143,7 @@ size_t rorHash(const char * word) {
 }
 
 size_t RorFunc (size_t num, int shift) {                                 // 011000001 ---> 10110000 
-    return (num >> shift) | (num << (sizeof (uint32_t) - shift));
+    return (num >> shift) | (num << (sizeof (num) * 8 - shift));
 }
 ~~~
 
@@ -154,7 +154,8 @@ As we can see, the distribution looks similar to rolHash one. Still not really e
 ### 7. FAQ6Hash
 
 At the end I decided to make a diagram for quite famous Jenkins hash function FAQ6. \
-Check the following link to learn about it: \
+Check the following link to learn about it:
+
 https://en.wikipedia.org/wiki/Jenkins_hash_function
 
 ~~~C++
@@ -192,6 +193,183 @@ Let's order them according to their performane:
 5) AsciiHash  
 6) StrlenHash 
 7) OneHash
+
+## Search optimization 
+
+For my optimization reserarch i've decided to stick with RolHash function since it is quite decent and relatively simple. \
+**Testing method:** \
+Each test consists of a series of 10 trials, in each of which the search function runs 100000000 times, going through all the words in the Hash Table.
+Then the mean time of all 10 trials is calculated (using <time.h>) and put in log file. 
+
+## Let's get started!
+First of all, let's make an interesting observation using our favorite and familiar godbolt: 
+
+https://godbolt.org/ (extremely useful site to explore your compiler)
+
+Let's put our RolFunc() in there: \
+<img src="forReadme/photo_2023-04-23_23-04-55.jpg" width = 40%> \
+Wow! Even without any optimization flags compiler replaces our hand-written C RolFunc with assembler one. So, to start somewhere, let's replace С RolFunc by ourselves.
+~~~asm
+section .text
+global _RolFunc
+
+_RolFunc:
+           mov rax, rdi   ; first arg
+           rol rax, 1
+
+           ret 
+~~~
+And now our RolHash function looks like this:
+~~~C++
+size_t rolHashAsmROL(const char * word) {
+
+    size_t hash = 0;
+
+    for (; *word; word++) {
+        hash = _RolFunc(hash) ^ (*word);
+    }
+    return hash;
+}
+~~~
+
+Let's run our tests without any optimization flags and compare this version with default one:
+
+|                | search time, s | Speed Up (of default) |
+|----------------|----------------|-----------------------|
+| default        | 4,281          | 1                     |
+| asm Rol        | 4,100          | 1,044                 |
+
+Not really impressive, but we didn't do much to be honest. Basically we just removed prologue and epilogue from our Rol function. \
+But we're just getting started ;)
+
+Now let's look at our rolHash function even more closely. The whole hashing algorithm might be quite easily converted to assembly code. Indeed, it consits of Rol and Xor instructions. So, why don't we just code our algorithm on assembler? Let's do it two ways: using asm insertion and fully writing hash function on asm. 
+
+**Asm insertion**
+~~~C++
+size_t asmInsertRolHash(const char* word) {
+    size_t hash = 0;
+
+    for (; *word; word++) {
+        asm (
+            ".intel_syntax noprefix\n\t"
+            "mov rax, %1 \n\t"
+            "rol rax\n\t"
+            "movsx rbx, BYTE PTR[%2]\n\t"
+            "xor rax, rbx\n\t"
+            "mov %0, rax\n\t"
+            ".att_syntax prefix\n\t" 
+            : "=r"(hash)
+            : "r"(hash), "r"(word)
+            : "%rax", "%rbx"    
+        );
+    }
+
+    return hash;
+}
+~~~
+
+**Fully asm hash functions**
+~~~asm
+section .text
+global _RolHash
+
+_RolHash:   
+            xor rax, rax
+            movsx rdx, BYTE [rdi]   ; first arg is string
+            test dl, dl             ; if char = 0
+            je done
+
+RolFunc:    rol rax, 1
+            xor rax, rdx 
+
+            inc rdi
+            movsx rdx, BYTE [rdi]
+            test dl, dl
+            jne RolFunc
+
+            ret
+
+done:
+            mov eax, 0
+            ret 
+~~~
+
+Let's run tests with no optimization flags and compare results:
+
+|                | search time, s | Speed Up (of default) |
+|----------------|----------------|-----------------------|
+| asm insertion  | 3,998          | 1,070                 |
+| fully asm hash | 3,303          | 1,300                 |
+
+Already more significant then previous version. As we can see in our case fully asm hash function performs better than asm insertion.
+
+So, let's sum up what we have so far: 
+
+**Wihout any optimization flags**
+
+|                | search time, s | Speed Up (of default) |
+|----------------|----------------|-----------------------|
+| default        | 4,281          | 1                     |
+| asm Rol        | 4,100          | 1,044                 |
+| asm insertion  | 3,998          | 1,070                 |
+| fully asm hash | 3,303          | 1,300                 |
+
+And what will happen if we run all our tests with "-O2" flag? (arguably the best flag in terms of compile time & safety & performance) 
+
+**With "-O2" flag:**
+
+|                | search time, s | Speed Up (of default) |
+|----------------|----------------|-----------------------|
+| default        | 3,019          | 1                     |
+| asm Rol        | 3,076          | 0,981                 |
+| asm insertion  | 2,972          | 1,02                  |
+| fully asm hash | 3,019          | 1                     |
+
+This may seem strange at first sight. Asm insertion performs better than fully asm hash function. Here's what I think about this.
+Our fully asm hash function is written on NASM assembler. We compile it using "nasm -f ...", and then link it with the rest of obj files using g++. So, the optimization in this case is done by nasm (the "-Ox" nasm optimization flag is default since NASM 2.09). Check the following link to learn more about nasm optimization options: \
+https://nasm.us/doc/nasmdoc2.html                           
+
+On the other hand, the GNU uses GAS assembler. And when we use asm insertion, we just implement written on GAS asm code directly to the rest GNU generated GAS code. So it is still optimized by very powerful GNU optimizer. I suppose the optimization done by GNU is stronger than the NASM one. For this reason with "-O2" hash function with asm insertion performs better than the same function fully written on nasm.
+
+### Let's go even further
+
+Note that another significant function within the search function is the comparison of keys (strcmp). Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisios. And collisions cause comparisons. And comparisons mean intense usage of not so fast strcmp function. \
+It would be good to at least replace all strcmp functions with memcmp (slightly faster). But to do so, we must specify the amount of bytes to compare (as opposed to strcmp, which checks for '\0'). Well, calling strlen function every time before memcmp obviously won't make much better... \
+The solution i propose is not qite elegant yet effective and will help us in future. \ 
+Let's just increase the size of all words to some single value (large enough to fit every word). According to text analysis, maximum word length is 18. 
+So we can choose any size from 18 and up. I'm personally in love with number 32, and to my delight 32 > 18, so let's stick with 32 ;) 
+
+But wait...
+
+<img src="forReadme/whatDone.jpg" width = 50%> 
+
+In previous version we compared keys what are up to 18 bytes (most are much shorter.), and now we're comparing whole 32 bytes each time! Seems like a terrible idea, but now we have an opportunity to summon some dark and mysterious force... Yeah, i'm talking about...
+
+### AVX instructions
+
+Now as all of our words are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. To speed up the process even more, let's align each word with 32 bit. 
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
