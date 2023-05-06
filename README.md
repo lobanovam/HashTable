@@ -184,7 +184,7 @@ The last and obviously the best. The distribution is quite even and full-ranged.
 
 ### Research conclusion
 So, the diagrams were made for 7 Hash Functions. \
-Let's order them according to their performane:
+Let's order them according to their performance:
 
 1) FAQ6Hash 
 2) rolHash  
@@ -196,12 +196,22 @@ Let's order them according to their performane:
 
 ## Search optimization 
 
-For my optimization reserarch i've decided to stick with RolHash function since it is quite decent and relatively simple. \
+Let's try to optimize our search function. 
+
 **Testing method:** \
 Each test consists of a series of 10 trials, in each of which the search function runs 100000000 times, going through all the words in the Hash Table.
 Then the mean time of all 10 trials is calculated (using <time.h>) and put in log file. 
 
 ## Let's get started!
+
+I decided to start by working with ROL Hash function. I really like its simplicity and decent performance.
+
+### rolHash optimization 
+
+Here's what a valgrind profiler tells us:
+
+As we can see, ROL Hash function takes significant 27.4% of TableSearch function. So let's try to optimize it! 
+
 First of all, let's make an interesting observation using our favorite and familiar godbolt: 
 
 https://godbolt.org/ (extremely useful site to explore your compiler)
@@ -244,7 +254,10 @@ But we're just getting started ;)
 
 Now let's look at our rolHash function even more closely. The whole hashing algorithm might be quite easily converted to assembly code. Indeed, it consits of Rol and Xor instructions. So, why don't we just code our algorithm on assembler? Let's do it two ways: using asm insertion and fully writing hash function on asm. 
 
-**Asm insertion**
+<details>
+<summary>Asm insertion</summary>
+
+
 ~~~C++
 size_t asmInsertRolHash(const char* word) {
     size_t hash = 0;
@@ -268,7 +281,12 @@ size_t asmInsertRolHash(const char* word) {
 }
 ~~~
 
-**Fully asm hash functions**
+</details>
+
+<details>
+<summary>Fully asm hash functions</summary>
+
+
 ~~~asm
 section .text
 global _RolHash
@@ -293,6 +311,8 @@ done:
             mov eax, 0
             ret 
 ~~~
+
+</details>
 
 Let's run tests with no optimization flags and compare results:
 
@@ -333,23 +353,139 @@ On the other hand, the GNU uses GAS assembler. And when we use asm insertion, we
 
 ### Let's go even further
 
-Note that another significant function within the search function is the comparison of keys (strcmp). Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisios. And collisions cause comparisons. And comparisons mean intense usage of not so fast strcmp function. \
-It would be good to at least replace all strcmp functions with memcmp (slightly faster). But to do so, we must specify the amount of bytes to compare (as opposed to strcmp, which checks for '\0'). Well, calling strlen function every time before memcmp obviously won't make much better... \
-The solution i propose is not qite elegant yet effective and will help us in future. \ 
-Let's just increase the size of all words to some single value (large enough to fit every word). According to text analysis, maximum word length is 18. 
-So we can choose any size from 18 and up. I'm personally in love with number 32, and to my delight 32 > 18, so let's stick with 32 ;) 
+Note that another significant function within the search function is the comparison of keys (strcmp). Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisions. And collisions cause comparisons. So it would be good to find some way to optimize compare funcrion. 
 
-But wait...
-
-<img src="forReadme/whatDone.jpg" width = 50%> 
-
-In previous version we compared keys what are up to 18 bytes (most are much shorter.), and now we're comparing whole 32 bytes each time! Seems like a terrible idea, but now we have an opportunity to summon some dark and mysterious force... Yeah, i'm talking about...
+Let's just increase the size of all words up to 32 bytes (since according to text analysis, maximum word length is 18). 
+And now we can write our own compare function.
 
 ### AVX instructions
 
-Now as all of our words are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. To speed up the process even more, let's align each word with 32 bit. 
+Now as all of our words are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. Now compare function looks like this:
 
- 
+~~~C++
+
+int avxCmp(__m256i* str1, __m256i* str2) {
+
+    __m256i cmp = _mm256_cmpeq_epi8 (*str1, *str2);
+    int mask = _mm256_movemask_epi8 (cmp);
+
+    return (mask - 0xffffffff);
+}
+
+~~~
+
+Let's run tests once again:
+
+**With "-O2" flag**
+
+|                | search time, s | Speed Up (of default) |
+|----------------|----------------|-----------------------|
+| default        | 3,279          | 1                     |
+| asm Rol        | 3,295          | 0,995                 |
+| asm insertion  | 3,297          | 0,995                 |
+| fully asm hash | 3,296          | 0,995                 |
+
+As we can see, the results are slightly disappointing. The fastest search is the one with default hash function and it is still slower than literally every test without avx:
+
+**With "-O2" flag**
+
+|                | search time AVX, s | search time NO_AVX, s | slow down:   |    
+|----------------|--------------------|-----------------------|--------------|
+| default        | 3,279              | 3,019                 | 1,086        |
+| asm Rol        | 3,295              | 3,076                 | 1,071        |
+| asm insertion  | 3,297              | 2,972                 | 1,109        |
+| fully asm hash | 3,296              | 3,019                 | 1,091        |
+
+
+So let's shut our AVX branch for now...
+
+I suppose that is everything we could achieve in optimization of simple ROL hash function. So let's move on to something more serious.
+
+### FAQ6Hash optimization
+
+Using callgrind with FAQ6Hash we see slightly different picture:
+
+As we can see, unlike the previous case, FAQ6Hash takes significantly more time than strcmp (45.6% vs 24.72%). So optimizing the hash function itself might really help.
+
+Let's write FAQ6 hash function fully on asm and run some tests:
+<details>
+<summary>FAQ6Hash assembly code</summary>
+
+~~~asm
+section .text
+global _FAQ6
+
+_FAQ6:
+        movzx   eax, BYTE [rdi]
+        test    al, al
+        je      .null
+        xor     edx, edx
+.lp:
+        add     rax, rdx
+        add     rdi, 1
+        mov     rdx, rax
+        sal     rdx, 10
+        add     rax, rdx
+        mov     rdx, rax
+        shr     rdx, 6
+        xor     rdx, rax
+
+        movzx   eax, BYTE [rdi]
+        test    al, al
+        jne     .lp
+
+        lea     rax, [rdx+rdx*8]
+        mov     rdx, rax
+        shr     rdx, 11
+        xor     rdx, rax
+        mov     rax, rdx
+        sal     rax, 15
+        add     rax, rdx
+
+        ret
+
+.null:
+        xor     eax, eax
+        ret
+~~~
+</details>
+
+**Without "-O2" flag**
+
+|                | search time, s | Speed Up (of default) |
+|----------------|----------------|-----------------------|
+| default        | 4,794          | 1                     |
+| fully asm FAQ6 | 3,789          | 1,265                 |
+
+**With "-O2" flag**
+
+|                | search time, s | Speed Up (of default) |
+|----------------|----------------|-----------------------|
+| default        | 3,519          | 1                     |
+| fully asm FAQ6 | 3,518          | 1                     |
+
+As we can see, our optimization can compete with "-O2" flag but can't really beat it. So now let's do something with our compare function.
+
+
+### Implementing CRC32
+
+
+
+### Changing Hash Table Size
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
