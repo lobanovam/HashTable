@@ -183,6 +183,12 @@ size_t FAQ6Hash(const char * word) {
 The last and obviously the best. The distribution is quite even and full-ranged.
 
 ### Research conclusion
+Here are dispersion values for each hash function: 
+
+| Hash Function | oneHash | strlenHash | asciiHash | AsciiSumHash | rorHash | rolHash | FAQ6Hash |
+|---------------|---------|------------|-----------|--------------|---------|---------|----------|
+| dispersion    | 12112   | 1534       | 530       | 20,4         | 9,7     | 7,4     | 2,4      |
+
 So, the diagrams were made for 7 Hash Functions. \
 Let's order them according to their performance:
 
