@@ -1,0 +1,32 @@
+--------------------START LOGS--------------------
+
+#done readFile()
+
+#done SplitOnWords()
+
+#done Set256Word()
+
+#done tableCTOR()
+
+#done SetHashTable()
+
+---
+ ordinary ROL hash time: 1.830007
+---
+---
+ rolHashAsmROL time: 1.861931
+---
+---
+ with asm insertion time: 1.817360
+---
+---
+ full asm _RolHash time: 1.812585
+---
+#done TableToCsv()
+
+#done textDTOR
+
+#done tableDTOR
+
+
+--------------------END LOGS--------------------

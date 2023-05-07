@@ -1,0 +1,21 @@
+--------------------START LOGS--------------------
+
+#done readFile()
+
+#done SplitOnWords()
+
+#done tableCTOR()
+
+#done SetHashTable()
+
+---
+ ordinary FAQ6 hash time: 68.622065
+---
+#done TableToCsv()
+
+#done textDTOR
+
+#done tableDTOR
+
+
+--------------------END LOGS--------------------

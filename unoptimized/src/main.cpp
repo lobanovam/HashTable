@@ -40,7 +40,7 @@ size_t (*HashFuncsArr[])(const char * word) = {
     FAQ6Hash
 };
 
-const int HASH_FUNC = ROL_HASH;
+const int HASH_FUNC = ONE_HASH;
 
 int main() {
     log("--------------------START LOGS--------------------\n\n");

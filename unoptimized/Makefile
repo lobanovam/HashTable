@@ -18,4 +18,7 @@ clear:
 	rm -f ./src/build/*.o main
 	
 CSVclear:
-	rm -f *.csv
+	rm -f ./tabulars/*.csv
+
+PNGclear:
+	rm -f ./png/*.png
