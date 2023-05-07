@@ -210,6 +210,8 @@ I decided to start by working with ROL Hash function. I really like its simplici
 
 Here's what a valgrind profiler tells us:
 
+<img src="forReadMe/valgrind1.png" width = 60%>
+
 As we can see, ROL Hash function takes significant 27.4% of TableSearch function. So let's try to optimize it! 
 
 First of all, let's make an interesting observation using our favorite and familiar godbolt: 
@@ -329,10 +331,10 @@ So, let's sum up what we have so far:
 
 |                | search time, s | Speed Up (of default) |
 |----------------|----------------|-----------------------|
-| default        | 4,281          | 1                     |
-| asm Rol        | 4,100          | 1,044                 |
+| default rolHash       | 4,281          | 1                     |
+| asm RolFunc        | 4,100          | 1,044                 |
 | asm insertion  | 3,998          | 1,070                 |
-| fully asm hash | 3,303          | 1,300                 |
+| fully asm rolHash | 3,303          | 1,300                 |
 
 And what will happen if we run all our tests with "-O2" flag? (arguably the best flag in terms of compile time & safety & performance) 
 
@@ -340,10 +342,10 @@ And what will happen if we run all our tests with "-O2" flag? (arguably the best
 
 |                | search time, s | Speed Up (of default) |
 |----------------|----------------|-----------------------|
-| default        | 3,019          | 1                     |
-| asm Rol        | 3,076          | 0,981                 |
+| default rolHash        | 3,019          | 1                     |
+| asm RolFunc        | 3,076          | 0,981                 |
 | asm insertion  | 2,972          | 1,02                  |
-| fully asm hash | 3,019          | 1                     |
+| fully asm rolHash | 3,019          | 1                     |
 
 This may seem strange at first sight. Asm insertion performs better than fully asm hash function. Here's what I think about this.
 Our fully asm hash function is written on NASM assembler. We compile it using "nasm -f ...", and then link it with the rest of obj files using g++. So, the optimization in this case is done by nasm (the "-Ox" nasm optimization flag is default since NASM 2.09). Check the following link to learn more about nasm optimization options: \
@@ -382,30 +384,31 @@ Let's run tests once again:
 
 |                | search time, s | Speed Up (of default) |
 |----------------|----------------|-----------------------|
-| default        | 3,279          | 1                     |
-| asm Rol        | 3,295          | 0,995                 |
-| asm insertion  | 3,297          | 0,995                 |
-| fully asm hash | 3,296          | 0,995                 |
+| default rolHash AVX       | 1,830          | 1                     |
+| asm RolFunc   AVX        | 1,862          | 0,983                 |
+| asm insertion AVX  | 1,817          | 1,007                 |
+| fully asm rolHash AVX| 1,812          | 1,010                 |
 
-As we can see, the results are slightly disappointing. The fastest search is the one with default hash function and it is still slower than literally every test without avx:
+As we can see, implementing avxCmp really improved our performance.
 
 **With "-O2" flag**
 
-|                | search time AVX, s | search time NO_AVX, s | slow down:   |    
-|----------------|--------------------|-----------------------|--------------|
-| default        | 3,279              | 3,019                 | 1,086        |
-| asm Rol        | 3,295              | 3,076                 | 1,071        |
-| asm insertion  | 3,297              | 2,972                 | 1,109        |
-| fully asm hash | 3,296              | 3,019                 | 1,091        |
+|                       | search time, s | Speed Up (of default) |
+|-----------------------|----------------|---------------------------|
+| default rolHash   NO_AVX | 3,019          | 1                         |
+| default rolHash   AVX | 1,830          | 1.650                         |
+| asm RolFunc   AVX | 1,862          | 1,621                     |
+| asm insertion AVX | 1,817          | 1,662                     |
+|  fully asm rolHash AVX| 1,812          | 1,666                     |
 
 
-So let's shut our AVX branch for now...
-
-I suppose that is everything we could achieve in optimization of simple ROL hash function. So let's move on to something more serious.
+I suppose that's everything we could achieve in optimization of simple ROL hash function. So let's move on to something more serious for futher ideas.
 
 ### FAQ6Hash optimization
 
 Using callgrind with FAQ6Hash we see slightly different picture:
+
+<img src="forReadMe/valgrind2.png" width = 60%>
 
 As we can see, unlike the previous case, FAQ6Hash takes significantly more time than strcmp (45.6% vs 24.72%). So optimizing the hash function itself might really help.
 
