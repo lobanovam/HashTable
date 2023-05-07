@@ -363,10 +363,12 @@ And now we can write our own compare function.
 Now as all of our words are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. Now compare function looks like this:
 
 ~~~C++
-
 int avxCmp(__m256i* str1, __m256i* str2) {
 
-    __m256i cmp = _mm256_cmpeq_epi8 (*str1, *str2);
+    __m256i first = *str1;
+    __m256i second = *str1;
+    
+    __m256i cmp = _mm256_cmpeq_epi8 (first, second);
     int mask = _mm256_movemask_epi8 (cmp);
 
     return (mask - 0xffffffff);
@@ -408,6 +410,7 @@ Using callgrind with FAQ6Hash we see slightly different picture:
 As we can see, unlike the previous case, FAQ6Hash takes significantly more time than strcmp (45.6% vs 24.72%). So optimizing the hash function itself might really help.
 
 Let's write FAQ6 hash function fully on asm and run some tests:
+
 <details>
 <summary>FAQ6Hash assembly code</summary>
 
@@ -454,24 +457,95 @@ _FAQ6:
 
 |                | search time, s | Speed Up (of default) |
 |----------------|----------------|-----------------------|
-| default        | 4,794          | 1                     |
+| default FAQ6   | 4,794          | 1                     |
 | fully asm FAQ6 | 3,789          | 1,265                 |
 
 **With "-O2" flag**
 
 |                | search time, s | Speed Up (of default) |
 |----------------|----------------|-----------------------|
-| default        | 3,519          | 1                     |
+| default FAQ6   | 3,519          | 1                     |
 | fully asm FAQ6 | 3,518          | 1                     |
 
 As we can see, our optimization can compete with "-O2" flag but can't really beat it. So now let's do something with our compare function.
 
+### AVX compare
 
-### Implementing CRC32
+As in our previous case, let's implement avxCmp function and see the results:
 
+**With "-O2" flag**
 
+|                   | search time, s | Speed Up (of default) |
+|-------------------|----------------|-----------------------|
+| default FAQ6   AVX| 2,161          | 1                     |
+| fully asm FAQ6 AVX| 2,127          | 1,016                 |
+
+Now let's sum up the results:
+
+**With "-O2" flag**
+
+|                       | search time, s | Speed Up (of default) |
+|-----------------------|----------------|---------------------------|
+| default FAQ6   NO_AVX | 3,519          | 1                         |
+| fully asm FAQ6 NO_AVX | 3,518          | 1                         |
+| default FAQ6      AVX | 2,161          | 1,628                     |
+| fully asm FAQ6    AVX | 2,127          | 1,654                     |
+
+So, the current best for now is fully asm FAQ6 with hand written avxCmp function.
+
+Now let's try something completely different: what if we replace our FAQ6Hash function with built in CRC32 hash? Let's try it out!
+
+<details>
+<summary>CRC32 asm code</summary>
+
+~~~asm
+    
+    section .text
+    global crc32
+
+    crc32:
+        xor     rax, rax
+        crc32   rax, qword [rdi]
+        crc32   rax, qword [rdi+8]
+        crc32   rax, qword [rdi+16]
+        crc32   rax, qword [rdi+24]
+    
+        ret
+
+~~~
+</details>
+
+|                   | search time, s | relative Speed Up     | absolute Speed up (of default FAQ6 with "-O2" NO_AVX)
+|-------------------|----------------|-----------------------|-----------------------------------------------------
+| fully asm FAQ6 AVX| 2,127          | 1                     | 1,654
+| _crc32         AVX| 1,183          | 1,798                 | 2,975
+
+As expected, CRC32 implementation really speeds our search up. So, now we have very fast hash function and quite good comparison function. The only thing left is to change the size of our Hash Table to reduce collisions. 
 
 ### Changing Hash Table Size
+
+Let's increase our Hash Table size by a factor of 1.5 (I've tried several variants and this scale factor gives the best speed up):
+
+|                    | search time, s | relative Speed Up     | absolute Speed up (of default FAQ6 with "-O2" NO_AVX OLD_SIZE)
+|--------------------|----------------|-----------------------|-----------------------------------------------------
+| _crc32 AVX OLD_SIZE| 1,183          | 1                     | 2,975
+| _crc32 AVX NEW_SIZE| 1,159          | 1,021                 | 3,036
+
+
+So, we could get over a 3x speed up factor! Note that last optimization didn't improve the performance that much, therefore we have reason to believe that our optimizations are approaching the limit. 
+
+## Conclusion
+
+In this project we implemented our own Hash Table, researched 7 Hash Functions, ranked them according to their performance. \
+After that we tried to optimize table search function using 5 general approaches: \
+1) assembly insertions
+2) fully written on asm functions
+3) avx instructions 
+4) changing to better hash functions
+5) changing Hash Table size
+
+As a result, we could outperform the "-O2" compiler flag by approximately 3 times.
+
 
 
 
