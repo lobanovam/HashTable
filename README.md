@@ -47,7 +47,7 @@ typedef struct Node {
 } Node;
 ~~~
 
-Since one of the goals is to research some hash functions and draw diagrams, the size of Hash Table is chosen in such way, that with decent hash function average lenght of linked list will be 6-8 (for easy display on charts).
+Since one of the goals is to research some hash functions and draw diagrams, the size of Hash Table is chosen in such way, that with decent hash function average lenght of linked list will be 4-6 (for easy display on charts).
 
 ## Researched Hash Functions
 All 7 researched Hash Functions with short descriptions and diagrams.
@@ -112,14 +112,14 @@ size_t rolHash(const char * word) {
     size_t hash = 0, n = strlen(word);
 
     for (size_t i = 0; i < n; i++) {
-        hash = RolFunc(hash, 1) ^ word[i]; 
+        hash = RolFunc(hash) ^ word[i]; 
     }
 
     return hash;
 }
 
-size_t RolFunc (size_t num, int shift) {                                 // 10011000 ----> 0011001
-    return (num << shift) | (num >> (sizeof (num) * 8 - shift));
+size_t RolFunc (size_t num) {                                 // 10011000 ----> 0011001
+    return (num << 1) | (num >> (sizeof(num) * 8 - 1));
 }
 ~~~
 
@@ -136,14 +136,14 @@ size_t rorHash(const char * word) {
     size_t hash = 0, n = strlen(word);
 
     for (size_t i = 0; i < n; i++) {
-        hash = RorFunc(hash, 1) ^ word[i]; 
+        hash = RorFunc(hash) ^ word[i]; 
     }
 
     return hash;
 }
 
-size_t RorFunc (size_t num, int shift) {                                 // 011000001 ---> 10110000 
-    return (num >> shift) | (num << (sizeof (num) * 8 - shift));
+size_t RorFunc (size_t num) {                                 // 011000001 ---> 10110000 
+    return (num >> 1) | (num << (sizeof (num) * 8 - 1));
 }
 ~~~
 
