@@ -69,7 +69,7 @@ size_t AsciiHash(const char * word) {
     return *word;
 }
 ~~~
-<img src="diagrams/AsciiHash.png" width = 60%>
+<img src="diagrams/asciiHash.png" width = 60%>
 Better than OneHash but still quite bad.
  
 ### 3. StrlenHash
@@ -189,7 +189,6 @@ Here are dispersion values for each hash function:
 |---------------|---------|------------|-----------|--------------|---------|---------|----------|
 | dispersion    | 12112   | 1534       | 530       | 20,4         | 9,7     | 7,4     | 2,4      |
 
-So, the diagrams were made for 7 Hash Functions. \
 Let's order them according to their performance:
 
 1) FAQ6Hash 
@@ -216,16 +215,16 @@ I decided to start by working with ROL Hash function. I really like its simplici
 
 Here's what a valgrind profiler tells us:
 
-<img src="forReadMe/valgrind1.png" width = 60%>
+<img src="forReadme/valgrind1.jpg" width = 60%>
 
-As we can see, ROL Hash function takes significant 27.4% of TableSearch function. So let's try to optimize it! 
+First thing to notice is that compiler uses strcmp_avx instead of ordinary strcmp, and it still weights more than our rolHash function. Despite the fact that rolHash is very simple and fast already, let's try to optimize it anyway! 
 
 First of all, let's make an interesting observation using our favorite and familiar godbolt: 
 
 https://godbolt.org/ (extremely useful site to explore your compiler)
 
 Let's put our RolFunc() in there: \
-<img src="forReadme/photo_2023-04-23_23-04-55.jpg" width = 40%> \
+<img src="forReadme/godbolt.jpg" width = 40%> \
 Wow! Even without any optimization flags compiler replaces our hand-written C RolFunc with assembler one. So, to start somewhere, let's replace С RolFunc by ourselves.
 ~~~asm
 section .text
@@ -361,14 +360,14 @@ On the other hand, the GNU uses GAS assembler. And when we use asm insertion, we
 
 ### Let's go even further
 
-Note that another significant function within the search function is the comparison of keys (strcmp). Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisions. And collisions cause comparisons. So it would be good to find some way to optimize compare funcrion. 
+Note that another significant function within the search function is the comparison of keys (strcmp). In our case it takes even more time than hash function itself. Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisions. And collisions cause comparisons. So it would be good to find some way to optimize comparing function. 
 
 Let's just increase the size of all words up to 32 bytes (since according to text analysis, maximum word length is 18). 
-And now we can write our own compare function.
+And now we can write our own compare function using avx instructions.
 
 ### AVX instructions
 
-Now as all of our words are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. Now compare function looks like this:
+Now as all of our words are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. New compare function looks like this:
 
 ~~~C++
 int avxCmp(__m256i* str1, __m256i* str2) {
@@ -414,7 +413,7 @@ I suppose that's everything we could achieve in optimization of simple ROL hash 
 
 Using callgrind with FAQ6Hash we see slightly different picture:
 
-<img src="forReadMe/valgrind2.png" width = 60%>
+<img src="forReadme/valgrind2.jpg" width = 60%>
 
 As we can see, unlike the previous case, FAQ6Hash takes significantly more time than strcmp (45.6% vs 24.72%). So optimizing the hash function itself might really help.
 
