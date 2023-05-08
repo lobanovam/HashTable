@@ -15,6 +15,7 @@ typedef struct HashTable {
 
 static void ClearList(Item* item);
 static Node* CreateNode(const char * str);
+int ListPushBack(Node* head, const char* key);
 
 HashTable * tableCTOR(size_t size, size_t (*hashFunc)(const char * word)) {
 
@@ -39,9 +40,6 @@ void TableInsert(HashTable * hashTable, const char * word) {
 
     size_t index = hashTable->hashFunc(word) % hashTable->size;
 
-    // printf("\n----------------------");
-    // printf("%s value: %zu\n", (char*)word,hashTable->hashFunc((char*) word));
-
     Node* prevNode = hashTable->tableItems[index].node;
     
     if (prevNode == NULL) {
@@ -51,38 +49,39 @@ void TableInsert(HashTable * hashTable, const char * word) {
         return;
     }
 
-    while (prevNode->next != NULL) {
+    int inserted = ListPushBack(prevNode, word);
 
-        assert(prevNode->string != NULL);
-        if (!strcmp(prevNode->string, word)) {
-            return;
-        }
-        prevNode = prevNode->next;
-    }
-    if (strcmp(prevNode->string, word)) {
-        prevNode->next = CreateNode(word);
+    if (inserted) 
         hashTable->tableItems[index].peers++;
+
+}
+
+int ListPushBack(Node* head, const char* key) {
+
+    assert(head != NULL);
+    assert(key != NULL);
+
+    while (head->next != NULL) {
+
+        assert(head->string != NULL);
+        if (!strcmp(head->string, key)) {
+            return 0;
+        }
+        head = head->next;
     }
+
+    if (strcmp(head->string, key)) {
+        head->next = CreateNode(key);
+
+        return 1;
+    }
+
+    return 0;
 }
 
 Node* TableSearch(HashTable * hashTable, const char* key) {
 
-    // clock_t meanTime = 0;
 
-    // for (size_t count = 0; count < 5; count++) {
-
-    //     clock_t start = clock();
-    //     for (size_t i = 0; i < 1000000000; i++) {
-    //         size_t index = hashTable->hashFunc(key) % hashTable->size;  
-    //     }
-    //     clock_t end = clock();
-    //     meanTime += (end - start);
-    //     printf("%zu), time is %f\n", count+1, (double) (end - start) / CLOCKS_PER_SEC);
-    // }
-
-    // printf("mean time: %f\n", (double) (meanTime) / (5 * CLOCKS_PER_SEC));
-
-  
     size_t index = hashTable->hashFunc(key) % hashTable->size;
 
     Node* node =  hashTable->tableItems[index].node;

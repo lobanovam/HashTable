@@ -12,6 +12,7 @@ double TestHashTable(HashTable * hashTable, Text* text, size_t testCt);
 
 //const char* InputFilename = "./textData/inputText.txt";
 const char* InputFilename = "./textData/Text.txt";
+
 const char* InputMode = "r";
 const char* CsvMode = "w";
 
@@ -36,7 +37,6 @@ int main() {
 
     SetHashTable(hashTable, &text);
     log("#done SetHashTable()\n\n");
-    
     double meanTime = 0;
 //-----------------------------------------------
     meanTime = TestHashTable(hashTable, &text, 10);

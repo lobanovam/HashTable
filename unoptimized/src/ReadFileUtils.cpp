@@ -52,7 +52,6 @@ void SplitOnWords(Text * text) {
             i++;
         }
         *(text->buffer + i) = '\0';
-        printf("got %s\n", text->words[wordsCt]);
 
         wordsCt++;
 
@@ -77,10 +76,10 @@ void wordsResize(Text * text, size_t size) {
         printf("ERROR: realloc error in wordsResize\n");
     }
     text->wordsCt = size;
-    printf("resize completed\n");
 }
 
 void textDTOR(Text * text) {
+
     assert(text != NULL);
     assert(text->buffer != NULL);
     assert(text->words != NULL);

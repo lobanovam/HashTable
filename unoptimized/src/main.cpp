@@ -53,7 +53,6 @@ int main() {
     fclose(read);
     log("#done readFile()\n\n");
 
-
     SplitOnWords(&text);
     log("#done SplitOnWords()\n\n");
 
@@ -63,14 +62,7 @@ int main() {
     SetHashTable(hashTable, &text);
     log("#done SetHashTable()\n\n");
 
-    
     Node* node = TableSearch(hashTable, "sasha");
-
-    // if (node) {
-    //     //log("found str is %s\n", node->string);
-    // }
-    // else 
-    //     log("not found\n");
     
     FILE* CsvFile = openFile(CsvFilenames[HASH_FUNC], CsvMode);
     TableToCsv(hashTable, CsvFile);
@@ -94,10 +86,12 @@ void SetHashTable(HashTable * hashTable, Text * text) {
     assert(hashTable != NULL);
     assert(text      != NULL);
 
-    for (size_t i = 0; i < text->wordsCt; i++) {
+    char** wordsArr = text->words;
+    size_t wordsCt = text->wordsCt;
 
-        char* str = text->words[i];
-        //log("will be trying to insert %s\n", str);
+    for (size_t i = 0; i < wordsCt; i++) {
+
+        char* str = wordsArr[i];
         TableInsert(hashTable, str);
     }
 }

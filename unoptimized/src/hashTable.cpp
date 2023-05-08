@@ -18,6 +18,7 @@ typedef struct Node {
 
 static void ClearList(Item* item);
 static Node* CreateNode(const char * str);
+int ListPushBack(Node* head, const char* key);
 
 HashTable * tableCTOR(size_t size, size_t (*hashFunc)(const char * word)) {
 
@@ -41,28 +42,43 @@ void TableInsert(HashTable * hashTable, const char * word) {
     assert(word      != NULL);
 
     size_t index = hashTable->hashFunc(word) % hashTable->size;
-
     Node* prevNode = hashTable->tableItems[index].node;
     
-    if (prevNode == NULL) {
+    if (!prevNode) {
 
         hashTable->tableItems[index].peers++;
         hashTable->tableItems[index].node = CreateNode(word);
         return;
     }
 
-    while (prevNode->next != NULL) {
+    int inserted = ListPushBack(prevNode, word);
 
-        assert(prevNode->string != NULL);
-        if (!strcmp(prevNode->string, word)) {
-            return;
-        }
-        prevNode = prevNode->next;
-    }
-    if (strcmp(prevNode->string, word)) {
-        prevNode->next = CreateNode(word);
+    if (inserted) 
         hashTable->tableItems[index].peers++;
+
+}
+
+int ListPushBack(Node* head, const char* key) {
+
+    assert(head != NULL);
+    assert(key != NULL);
+
+    while (head->next != NULL) {
+
+        assert(head->string != NULL);
+        if (!strcmp(head->string, key)) {
+            return 0;
+        }
+        head = head->next;
     }
+
+    if (strcmp(head->string, key)) {
+        head->next = CreateNode(key);
+
+        return 1;
+    }
+
+    return 0;
 }
 
 Node* TableSearch(HashTable * hashTable, const char* key) {
@@ -72,8 +88,6 @@ Node* TableSearch(HashTable * hashTable, const char* key) {
 
     size_t hashVal = hashTable->hashFunc(key);
     size_t index = hashVal % hashTable->size;
-
-    //IndexDump(hashTable, key);
 
     Node* node =  hashTable->tableItems[index].node;
 
@@ -99,7 +113,6 @@ static Node* CreateNode(const char * str) {
     assert(node->string != NULL);
 
     strcpy(node->string, str);
-    //printf("created node with str %s\n", node->string);
     node->next = NULL;
 
     return node;

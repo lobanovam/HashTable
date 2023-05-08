@@ -5,7 +5,6 @@
 #include "./include/log.hpp"
 #include "./include/hashFuncs.hpp"
 
-
 void SetHashTable(HashTable * hashTable, Text * text);
 double TestHashTable(HashTable * hashTable, Text* text, size_t testCt);
 
@@ -43,19 +42,19 @@ int main() {
 //-----------------------------------------------
     meanTime = TestHashTable(hashTable, &text, 10);
     log("---\n ordinary ROL hash time: %f\n---\n", meanTime);
-//-----------------------------------------------
-    ReplaceHashFunc(hashTable, rolHashAsmROL);
-    meanTime = TestHashTable(hashTable, &text, 10);
-    log("---\n rolHashAsmROL time: %f\n---\n", meanTime);
-//-----------------------------------------------
-    ReplaceHashFunc(hashTable, asmInsertRolHash);
-    meanTime = TestHashTable(hashTable, &text, 10);
-    log("---\n with asm insertion time: %f\n---\n", meanTime);
-//-----------------------------------------------
-    ReplaceHashFunc(hashTable, _RolHash);
-    meanTime = TestHashTable(hashTable, &text, 10);
-    log("---\n full asm _RolHash time: %f\n---\n", meanTime);
-//-----------------------------------------------
+// //-----------------------------------------------
+//     ReplaceHashFunc(hashTable, rolHashAsmROL);
+//     meanTime = TestHashTable(hashTable, &text, 10);
+//     log("---\n rolHashAsmROL time: %f\n---\n", meanTime);
+// //-----------------------------------------------
+//     ReplaceHashFunc(hashTable, asmInsertRolHash);
+//     meanTime = TestHashTable(hashTable, &text, 10);
+//     log("---\n with asm insertion time: %f\n---\n", meanTime);
+// //-----------------------------------------------
+//     ReplaceHashFunc(hashTable, _RolHash);
+//     meanTime = TestHashTable(hashTable, &text, 10);
+//     log("---\n full asm _RolHash time: %f\n---\n", meanTime);
+// //-----------------------------------------------
 
     FILE* CsvFile = openFile(CsvFilename, CsvMode);
     TableToCsv(hashTable, CsvFile);

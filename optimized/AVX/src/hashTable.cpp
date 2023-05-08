@@ -16,6 +16,7 @@ typedef struct HashTable {
 static void ClearList(Item* item);
 static Node* CreateNode(__m256i* str);
 int avxCmp(__m256i* str1, __m256i* str2);
+int ListPushBack(Node* head, __m256i* key);
 
 HashTable * tableCTOR(size_t size, size_t (*hashFunc)(const char * word)) {
 
@@ -40,9 +41,6 @@ void TableInsert(HashTable * hashTable, __m256i* key) {
 
     size_t index = hashTable->hashFunc((const char*) key) % hashTable->size;
 
-    // printf("\n----------------------");
-    // printf("%s value: %zu\n", (char*)key,hashTable->hashFunc((char*) key));
-
     Node* prevNode = hashTable->tableItems[index].node;
     
     if (prevNode == NULL) {
@@ -52,18 +50,34 @@ void TableInsert(HashTable * hashTable, __m256i* key) {
         return;
     }
 
-    while (prevNode->next != NULL) {
+    int inserted = ListPushBack(prevNode, key);
 
-        assert(prevNode->str != NULL);
-        if (!avxCmp(prevNode->str, key)) {
-            return;
-        }
-        prevNode = prevNode->next;
-    }
-    if (avxCmp(prevNode->str, key)) {
-        prevNode->next = CreateNode(key);
+    if (inserted) 
         hashTable->tableItems[index].peers++;
+
+}
+
+int ListPushBack(Node* head, __m256i* key) {
+
+    assert(head != NULL);
+    assert(key != NULL);
+
+    while (head->next != NULL) {
+
+        assert(head->str != NULL);
+        if (!avxCmp(head->str, key)) {
+            return 0;
+        }
+        head = head->next;
     }
+
+    if (avxCmp(head->str, key)) {
+        head->next = CreateNode(key);
+
+        return 1;
+    }
+
+    return 0;
 }
 
 Node* TableSearch(HashTable * hashTable, __m256i* key) {
@@ -169,7 +183,7 @@ void IndexDump(HashTable * hashTable, const char * key) {
 int avxCmp(__m256i* str1, __m256i* str2) {
 
     __m256i first = *str1;
-    __m256i second = *str1;
+    __m256i second = *str2;
     
     __m256i cmp = _mm256_cmpeq_epi8 (first, second);
     int mask = _mm256_movemask_epi8 (cmp);
