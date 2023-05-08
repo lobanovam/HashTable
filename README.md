@@ -373,7 +373,7 @@ Now as all of our words are 32 bytes long, it's very convenient to load them in 
 int avxCmp(__m256i* str1, __m256i* str2) {
 
     __m256i first = *str1;
-    __m256i second = *str1;
+    __m256i second = *str2;
     
     __m256i cmp = _mm256_cmpeq_epi8 (first, second);
     int mask = _mm256_movemask_epi8 (cmp);
