@@ -16,6 +16,7 @@ typedef struct HashTable {
 static void ClearList(Item* item);
 static Node* CreateNode(const char * str);
 int ListPushBack(Node* head, const char* key);
+int insertCmp(const char* str1, const char* str2);
 
 HashTable * tableCTOR(size_t size, size_t (*hashFunc)(const char * word)) {
 
@@ -88,9 +89,10 @@ Node* TableSearch(HashTable * hashTable, const char* key) {
 
     while (node) {
 
-        if (!strcmp((const char* )node->string, key))
+        if (!insertCmp((const char* )node->string, key)) {
             break;
-
+        }
+            
         node = node->next;
     }
 
@@ -184,6 +186,47 @@ void ReplaceHashFunc(HashTable * hashTable, size_t (*hashFunc)(const char * word
     assert(hashFunc != NULL);
 
     hashTable->hashFunc = hashFunc;
+
+}
+
+int insertCmp(const char* str1, const char* str2) {
+   
+    int result = 0;
+    asm(
+        ".intel_syntax noprefix\n\t"
+
+            "mov rsi, %1\n\t"
+            "mov rdi, %2\n\t"
+
+        "loop%=:\n\t"
+        
+            "mov al, byte ptr [rsi]\n\t"
+            "mov bl, byte ptr [rdi]\n\t"
+
+    	    "cmp al, 0\n\t"
+    	    "je end%=\n\t"
+    	    "cmp bl, 0\n\t"
+    	    "je end%=\n\t"
+
+    	    "cmp al, bl\n\t"
+    	    "jne end%=\n\t"
+
+    	    "inc rdi\n\t"
+    	    "inc rsi\n\t"
+    	    "jmp loop%=\n\t"
+
+        "end%=:\n\t"
+    	    "sub al, bl\n\t"
+    	    "mov %0, eax\n\t"
+
+
+        ".att_syntax prefix" 
+        : "=r" (result)
+        : "r" (str1), "r" (str2)
+        : "rax", "rbx", "rsi", "rdi"
+    );
+
+    return result;
 }
 
 

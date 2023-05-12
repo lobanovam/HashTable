@@ -73,6 +73,12 @@ size_t AsciiHash(const char * word) {
 }
 ~~~
 <img src="diagrams/asciiHash.png" width = 60%>
+
+<details>
+<summary>detailed AsciiHash</summary>
+<img src="diagrams/ScaledAsciiHash.png" width = 60%>
+</details>
+
 Better than OneHash but still quite bad.
  
 ### 3. StrlenHash
@@ -83,6 +89,12 @@ size_t StrlenHash(const char * word) {
 }
 ~~~
 <img src="diagrams/strlenHash.png" width = 60%>
+
+<details>
+<summary>detailed StrlenHash</summary>
+<img src="diagrams/ScaledStrlenHash.png" width = 60%>
+</details>
+
 As we can see, it is not really good Hash Functions either. Most of the word's length is 5 - 15.
 
 ### 4. AsciiSumHash
@@ -222,7 +234,9 @@ First thing to notice is that even without any optimization flags compiler uses 
 
 ### FAQ6Hash optimization
 
-Let's take a closer look at this function. The whole hashing algorithm might be quite easily converted to assembly code. Indeed, it consists of bitwise shifts and xor instructions. So, why don't we just code our algorithm on assembler? Let's do it two ways: using asm insertion and fully writing hash function on nasm.
+Let's take a closer look at this function. The whole hashing algorithm might be quite easily converted to assembly code. Indeed, it consists of bitwise shifts and xor instructions. So, why don't we just code our algorithm on assembler?
+
+**Note**: following code is written on NASM assembly.
 
 <details>
 <summary>FAQ6Hash assembly code</summary>
@@ -267,36 +281,86 @@ _FAQ6:
 </details>
 
 
-This may seem strange at first sight. Asm insertion performs better than fully asm hash function. Here's what I think about this.
-Our fully asm hash function is written on NASM assembler. We compile it using "nasm -f ...", and then link it with the rest of obj files using g++. So, the optimization in this case is done by nasm (the "-Ox" nasm optimization flag is default since NASM 2.09). Check the following link to learn more about nasm optimization options: \
-https://nasm.us/doc/nasmdoc2.html                           
 
-On the other hand, the GNU uses GAS assembler. And when we use asm insertion, we just implement written on GAS asm code directly to the rest GNU generated GAS code. So it is still optimized by very powerful GNU optimizer. I suppose the optimization done by GNU is stronger than the NASM one. For this reason with "-O2" hash function with asm insertion performs better than the same function fully written on nasm.
-
-**Without "-O2" flag**
-
-|                | search time, s | Speed Up (of default) |
+| Without "-O2" flag| search time, s | Speed Up (of default) |
 |----------------|----------------|-----------------------|
 | default FAQ6   | 4,794          | 1                     |
 | fully asm FAQ6 | 3,789          | 1,265                 |
 
-**With "-O2" flag**
 
-|                | search time, s | Speed Up (of default) |
+
+|With "-O2" flag | search time, s | Speed Up (of default) |
 |----------------|----------------|-----------------------|
 | default FAQ6   | 3,519          | 1                     |
 | fully asm FAQ6 | 3,518          | 1                     |
 
 As we can see, our optimization can compete with "-O2" flag but can't really beat it. 
 
-Note that another significant function within the search function is the comparison of keys. Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisions. And collisions cause comparisons. So it would be good to find the way to optimize compare function. 
+Note that another significant function within the search function is the comparison of keys. Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisions. And collisions cause comparisons. So it would be good to find the way to optimize comparison function.
 
-Let's just increase the size of all char arrays that hold our words to 32 bytes (since according to text analysis, maximum word length is 18). 
-And now we can write our own compare function using avx instructions.
+### Inline strcmp
 
-### AVX compare
+Let's write our own strcmp function using asm insertion.
 
-Now as all of our char arrays are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. New compare function looks like this:
+<details>
+<summary>strcmp asm insertion</summary>
+~~~C++
+asm(
+        ".intel_syntax noprefix\n\t"
+
+            "mov rsi, %1\n\t"
+            "mov rdi, %2\n\t"
+
+        "loop%=:\n\t"
+        
+            "mov al, byte ptr [rsi]\n\t"
+            "mov bl, byte ptr [rdi]\n\t"
+
+    	    "cmp al, 0\n\t"
+    	    "je end%=\n\t"
+    	    "cmp bl, 0\n\t"
+    	    "je end%=\n\t"
+
+    	    "cmp al, bl\n\t"
+    	    "jne end%=\n\t"
+
+    	    "inc rdi\n\t"
+    	    "inc rsi\n\t"
+    	    "jmp loop%=\n\t"
+
+        "end%=:\n\t"
+    	    "sub al, bl\n\t"
+    	    "mov %0, eax\n\t"
+
+
+        ".att_syntax prefix" 
+        : "=r" (result)
+        : "r" (str1), "r" (str2)
+        : "rax", "rbx", "rsi", "rdi"
+    );
+
+   
+~~~
+</details>
+
+Let's run and test it!
+
+
+| With "-O2" flag      | search time, s | relative Speed Up (of default) | absolute Speed up* |
+|----------------------|----------------|--------------------------------|--------------------|
+| default FAQ6  strcmp | 4.427          | 1                              |    0.795           |
+| fully asm FAQ6 insertCmp| 4.429       | 1                              |    0.795           |
+
+*of default FAQ6 with "-O2" & strcmp
+
+As we can see, it's hard to call it optimization... insertCmp function we wrote doesn't stand a chance against fast strcmp_avx used by compiler. Therefore we will not use it in the following test. We need to think of another way to optimize the comparison function.
+
+Let's increase the size of all char arrays that hold our words to 32 bytes (since according to text analysis, maximum word length is 18). 
+And now we can write our own comparison function using avx instructions.
+
+### AVX comparison
+
+Now as all of our char arrays are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. New comparison function looks like this:
 
 ~~~C++
 int avxCmp(__m256i* str1, __m256i* str2) {
@@ -314,23 +378,12 @@ int avxCmp(__m256i* str1, __m256i* str2) {
 
 Let's run tests once again:
 
-**With "-O2" flag**
+| With "-O2" flag   | search time, s | relative Speed up     | absolute Speed up*        |
+|-------------------|----------------|-----------------------|---------------------------|
+| default FAQ6   AVX| 2,161          | 1                     |    1,628                  |
+| fully asm FAQ6 AVX| 2,127          | 1,016                 |    1,654                  |
 
-|                   | search time, s | Speed Up (of default) |
-|-------------------|----------------|-----------------------|
-| default FAQ6   AVX| 2,161          | 1                     |
-| fully asm FAQ6 AVX| 2,127          | 1,016                 |
-
-Now let's sum up what we have for now:
-
-**With "-O2" flag**
-
-|                       | search time, s | Speed Up (of default) |
-|-----------------------|----------------|---------------------------|
-| default FAQ6   NO_AVX | 3,519          | 1                         |
-| fully asm FAQ6 NO_AVX | 3,518          | 1                         |
-| default FAQ6      AVX | 2,161          | 1,628                     |
-| fully asm FAQ6    AVX | 2,127          | 1,654                     |
+*of default FAQ6 with "-O2" NO_AVX
 
 So, the current best for now is fully asm FAQ6 with hand written avxCmp function.
 
@@ -368,7 +421,7 @@ The dispersion of CRC32 is **1.8** (against **2.4** of FAQ6Hash). So, as we can 
 
 And now let's run some tests! 
 
-|                   | search time, s | relative Speed Up                    | absolute Speed up* 
+|   With "-O2" flag | search time, s | relative Speed Up                    | absolute Speed up* 
 |-------------------|----------------|--------------------------------------|-----------------------------------------------------
 | fully asm FAQ6 AVX| 2,127          | 1                                    | 1,654
 | _crc32         AVX| 1,183          | 1,798                                | 2,975
@@ -381,14 +434,22 @@ As expected, CRC32 implementation really speeds our search up. So, now we have v
 
 Let's increase our Hash Table size by a factor of 1.5 (I've tried several variants and this scale factor gives the best speed up):
 
-|                    | search time, s | relative Speed Up     | absolute Speed up* 
+|    With "-O2" flag | search time, s | relative Speed Up     | absolute Speed up* 
 |--------------------|----------------|-----------------------|-----------------------------------------------------
 | _crc32 AVX OLD_SIZE| 1,183          | 1                     | 2,975
 | _crc32 AVX NEW_SIZE| 1,159          | 1,021                 | 3,036
 
 *of default FAQ6 with "-O2" NO_AVX OLD_SIZE
 
-So, we could get over a 3x speed up factor! Note that our last optimization didn't improve the performance that much, therefore we have reason to believe that our optimizations are approaching the limit. 
+So, we could get over a 3x speed up factor! Note that our last optimization didn't improve the performance that much, therefore we have reason to believe that our optimizations are approaching the limit.
+
+Let's take one last look at the profiler:
+
+<img src="forReadme/valgrind3.jpg" width = 60%>
+
+**Note**: "0x00...470" function is _crc32 (written on asm hash function). Callgrind just can't find its name.
+                                                                                                                 
+As we can see, hash function now takes less than 13% of time (we've started with 45.6%). Also notice that our new comparison function (avxCmp) simply disappeared from this list. Now it's not even in the top 20.                                                                                                       
 
 ## Conclusion
 

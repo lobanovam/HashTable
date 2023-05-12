@@ -18,7 +18,6 @@ enum HashFuncsEnum {
     ROL_HASH,
     ROR_HASH,
     FAQ6_HASH,
-    CRC32_HASH,
 };
 
 const char* CsvFilenames[] = {
@@ -29,7 +28,6 @@ const char* CsvFilenames[] = {
     "./tabulars/rolHash.csv",
     "./tabulars/rorHash.csv",
     "./tabulars/FAQ6Hash.csv",
-    "./tabulars/CRC32Hash.csv"
 };
 
 size_t (*HashFuncsArr[])(const char * word) = {
@@ -40,10 +38,9 @@ size_t (*HashFuncsArr[])(const char * word) = {
     rolHash,
     rorHash,
     FAQ6Hash,
-    _crc32
 };
 
-const int HASH_FUNC = FAQ6_HASH;
+const int HASH_FUNC = ROR_HASH;
 
 int main() {
     log("--------------------START LOGS--------------------\n\n");

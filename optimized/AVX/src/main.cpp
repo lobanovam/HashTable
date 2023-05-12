@@ -32,7 +32,7 @@ int main() {
     Set256Word(&text);
     log("#done Set256Word()\n\n");
 
-    HashTable * hashTable = tableCTOR(text.wordsCt / 15 , _crc32);
+    HashTable * hashTable = tableCTOR(text.wordsCt / 10 , _crc32);
     log("#done tableCTOR()\n\n");
 
     SetHashTable(hashTable, &text);

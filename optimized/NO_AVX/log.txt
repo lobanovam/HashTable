@@ -9,7 +9,10 @@
 #done SetHashTable()
 
 ---
- ordinary FAQ6 hash time: 2.881893
+ ordinary FAQ6 hash time: 4.427004
+---
+---
+ full asm FAQ6 time: 4.429817
 ---
 #done TableToCsv()
 

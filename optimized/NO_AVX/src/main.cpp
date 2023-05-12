@@ -32,7 +32,7 @@ int main() {
     SplitOnWords(&text);
     log("#done SplitOnWords()\n\n");
 
-    HashTable * hashTable = tableCTOR(text.wordsCt/15, rolHash);
+    HashTable * hashTable = tableCTOR(text.wordsCt/15, FAQ6Hash);
     log("#done tableCTOR()\n\n");
 
     SetHashTable(hashTable, &text);
@@ -42,9 +42,9 @@ int main() {
     meanTime = TestHashTable(hashTable, &text, 10);
     log("---\n ordinary FAQ6 hash time: %f\n---\n", meanTime);
 //-----------------------------------------------
-    // ReplaceHashFunc(hashTable, _FAQ6);
-    // meanTime = TestHashTable(hashTable, &text, 10);
-    // log("---\n full asm FAQ6 time: %f\n---\n", meanTime);
+    ReplaceHashFunc(hashTable, _FAQ6);
+    meanTime = TestHashTable(hashTable, &text, 10);
+    log("---\n full asm FAQ6 time: %f\n---\n", meanTime);
 //-----------------------------------------------
 //     ReplaceHashFunc(hashTable, asmInsertRolHash);
 //     meanTime = TestHashTable(hashTable, &text, 10);

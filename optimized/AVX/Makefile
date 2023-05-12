@@ -1,6 +1,6 @@
 CC = g++
 IFLAGS = -I./src/include/
-FLAGS = -fno-omit-frame-pointer -no-pie -std=c++14 -mavx2 -O2
+FLAGS = -fno-omit-frame-pointer -no-pie -std=c++14 -mavx2 -O2 -g
 
 SRC = ./src/main.cpp ./src/hashTable.cpp ./src/hashFuncs.cpp ./src/ReadFileUtils.cpp ./src/RolFunc.asm ./src/RolHash.asm ./src/FAQ6.asm ./src/CRC32.asm
 
