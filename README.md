@@ -242,6 +242,7 @@ Let's take a closer look at this function. The whole hashing algorithm might be 
 <summary>FAQ6Hash assembly code</summary>
 
 ~~~asm
+    
 section .text
 global _FAQ6
 
@@ -280,6 +281,7 @@ _FAQ6:
 ~~~
 </details>
 
+Let's run tests with and without the "-O2" optimization flag.
 
 
 | Without "-O2" flag| search time, s | Speed Up (of default) |
@@ -304,6 +306,7 @@ Let's write our own strcmp function using asm insertion.
 
 <details>
 <summary>strcmp asm insertion</summary>
+    
 ~~~C++
 asm(
         ".intel_syntax noprefix\n\t"
@@ -341,6 +344,7 @@ asm(
 
    
 ~~~
+    
 </details>
 
 Let's run and test it!
