@@ -1,7 +1,7 @@
 # HashTable
 ## Introduction
 
-This projects is part of I.R.Dedinskiy programming course (1st year MIPT DREC). \
+This projects is the part of I.R.Dedinskiy programming course (1st year MIPT DREC). \
 **Goals**: \
 **1)** implement hash table \
 **2)** research several hash functions \
@@ -47,7 +47,7 @@ typedef struct Node {
 } Node;
 ~~~
 
-Since one of the goals is to research some hash functions and draw diagrams, the size of Hash Table is chosen in such way, that with decent hash function average lenght of linked list will be 4-6 (for easy display on charts).
+Since one of the goals is to research some hash functions and draw diagrams, the size of Hash Table is chosen in such way, that with decent hash function average length of linked list will be 4-6 (for easy display on charts).
 
 ## Researched Hash Functions
 All 7 researched Hash Functions with short descriptions and diagrams.
@@ -73,14 +73,14 @@ size_t AsciiHash(const char * word) {
 Better than OneHash but still quite bad.
  
 ### 3. StrlenHash
-Returns the lenght of given string.
+Returns the length of given string.
 ~~~C++
 size_t StrlenHash(const char * word) {
     return strlen(word);
 }
 ~~~
 <img src="diagrams/strlenHash.png" width = 60%>
-As we can see, it is not really good Hash Functions either. Most of the word's lenght is 5 - 15.
+As we can see, it is not really good Hash Functions either. Most of the word's length is 5 - 15.
 
 ### 4. AsciiSumHash
 Return sum of all ascii codes in given string.
