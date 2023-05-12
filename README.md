@@ -1,7 +1,8 @@
 # HashTable
 ## Introduction
 
-This projects is the part of I.R.Dedinskiy programming course (1st year MIPT DREC). \
+This projects is the part of I.R.Dedinskiy programming course (1st year MIPT DREC). 
+
 **Goals**: \
 **1)** implement hash table \
 **2)** research several hash functions \
@@ -203,223 +204,25 @@ Let's order them according to their performance:
 
 ## Search optimization 
 
-Let's try to optimize our search function. 
+Let's try to optimize search in out Hash Table. 
 
 **Testing method:** \
-Each test consists of a series of 10 trials, in each of which the search function runs 100000000 times, going through all the words in the Hash Table.
+Each test consists of a series of 10 trials, in each of which the search function runs $10^8$ times, going through all the words in the Hash Table.
 Then the mean time of all 10 trials is calculated (using <time.h>) and put in log file. 
 
 ## Let's get started!
 
-I decided to start by working with ROL Hash function. I really like its simplicity and decent performance.
-
-### rolHash optimization 
+I decided to stick with FAQ6 hash function since it outperformed the rest hash functions in terms of distribution. 
 
 Here's what a valgrind profiler tells us:
 
-<img src="forReadme/valgrind1.jpg" width = 60%>
+<img src="forReadme/valgrind2.jpg" width = 60%>
 
-First thing to notice is that compiler uses strcmp_avx instead of ordinary strcmp, and it still weights more than our rolHash function. Despite the fact that rolHash is very simple and fast already, let's try to optimize it anyway! 
-
-First of all, let's make an interesting observation using our favorite and familiar godbolt: 
-
-https://godbolt.org/ (extremely useful site to explore your compiler)
-
-Let's put our RolFunc() in there: \
-<img src="forReadme/godbolt.jpg" width = 40%> \
-Wow! Even without any optimization flags compiler replaces our hand-written C RolFunc with assembler one. So, to start somewhere, let's replace С RolFunc by ourselves.
-~~~asm
-section .text
-global _RolFunc
-
-_RolFunc:
-           mov rax, rdi   ; first arg
-           rol rax, 1
-
-           ret 
-~~~
-And now our RolHash function looks like this:
-~~~C++
-size_t rolHashAsmROL(const char * word) {
-
-    size_t hash = 0;
-
-    for (; *word; word++) {
-        hash = _RolFunc(hash) ^ (*word);
-    }
-    return hash;
-}
-~~~
-
-Let's run our tests without any optimization flags and compare this version with default one:
-
-|                | search time, s | Speed Up (of default) |
-|----------------|----------------|-----------------------|
-| default        | 4,281          | 1                     |
-| asm Rol        | 4,100          | 1,044                 |
-
-Not really impressive, but we didn't do much to be honest. Basically we just removed prologue and epilogue from our Rol function. \
-But we're just getting started ;)
-
-Now let's look at our rolHash function even more closely. The whole hashing algorithm might be quite easily converted to assembly code. Indeed, it consits of Rol and Xor instructions. So, why don't we just code our algorithm on assembler? Let's do it two ways: using asm insertion and fully writing hash function on asm. 
-
-<details>
-<summary>Asm insertion</summary>
-
-
-~~~C++
-size_t asmInsertRolHash(const char* word) {
-    size_t hash = 0;
-
-    for (; *word; word++) {
-        asm (
-            ".intel_syntax noprefix\n\t"
-            "mov rax, %1 \n\t"
-            "rol rax\n\t"
-            "movsx rbx, BYTE PTR[%2]\n\t"
-            "xor rax, rbx\n\t"
-            "mov %0, rax\n\t"
-            ".att_syntax prefix\n\t" 
-            : "=r"(hash)
-            : "r"(hash), "r"(word)
-            : "%rax", "%rbx"    
-        );
-    }
-
-    return hash;
-}
-~~~
-
-</details>
-
-<details>
-<summary>Fully asm hash functions</summary>
-
-
-~~~asm
-section .text
-global _RolHash
-
-_RolHash:   
-            xor rax, rax
-            movsx rdx, BYTE [rdi]   ; first arg is string
-            test dl, dl             ; if char = 0
-            je done
-
-RolFunc:    rol rax, 1
-            xor rax, rdx 
-
-            inc rdi
-            movsx rdx, BYTE [rdi]
-            test dl, dl
-            jne RolFunc
-
-            ret
-
-done:
-            mov eax, 0
-            ret 
-~~~
-
-</details>
-
-Let's run tests with no optimization flags and compare results:
-
-|                | search time, s | Speed Up (of default) |
-|----------------|----------------|-----------------------|
-| asm insertion  | 3,998          | 1,070                 |
-| fully asm hash | 3,303          | 1,300                 |
-
-Already more significant then previous version. As we can see in our case fully asm hash function performs better than asm insertion.
-
-So, let's sum up what we have so far: 
-
-**Wihout any optimization flags**
-
-|                | search time, s | Speed Up (of default) |
-|----------------|----------------|-----------------------|
-| default rolHash       | 4,281          | 1                     |
-| asm RolFunc        | 4,100          | 1,044                 |
-| asm insertion  | 3,998          | 1,070                 |
-| fully asm rolHash | 3,303          | 1,300                 |
-
-And what will happen if we run all our tests with "-O2" flag? (arguably the best flag in terms of compile time & safety & performance) 
-
-**With "-O2" flag:**
-
-|                | search time, s | Speed Up (of default) |
-|----------------|----------------|-----------------------|
-| default rolHash        | 3,019          | 1                     |
-| asm RolFunc        | 3,076          | 0,981                 |
-| asm insertion  | 2,972          | 1,02                  |
-| fully asm rolHash | 3,019          | 1                     |
-
-This may seem strange at first sight. Asm insertion performs better than fully asm hash function. Here's what I think about this.
-Our fully asm hash function is written on NASM assembler. We compile it using "nasm -f ...", and then link it with the rest of obj files using g++. So, the optimization in this case is done by nasm (the "-Ox" nasm optimization flag is default since NASM 2.09). Check the following link to learn more about nasm optimization options: \
-https://nasm.us/doc/nasmdoc2.html                           
-
-On the other hand, the GNU uses GAS assembler. And when we use asm insertion, we just implement written on GAS asm code directly to the rest GNU generated GAS code. So it is still optimized by very powerful GNU optimizer. I suppose the optimization done by GNU is stronger than the NASM one. For this reason with "-O2" hash function with asm insertion performs better than the same function fully written on nasm.
-
-### Let's go even further
-
-Note that another significant function within the search function is the comparison of keys (strcmp). In our case it takes even more time than hash function itself. Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisions. And collisions cause comparisons. So it would be good to find some way to optimize comparing function. 
-
-Let's just increase the size of all words up to 32 bytes (since according to text analysis, maximum word length is 18). 
-And now we can write our own compare function using avx instructions.
-
-### AVX instructions
-
-Now as all of our words are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. New compare function looks like this:
-
-~~~C++
-int avxCmp(__m256i* str1, __m256i* str2) {
-
-    __m256i first = *str1;
-    __m256i second = *str2;
-    
-    __m256i cmp = _mm256_cmpeq_epi8 (first, second);
-    int mask = _mm256_movemask_epi8 (cmp);
-
-    return (mask - 0xffffffff);
-}
-
-~~~
-
-Let's run tests once again:
-
-**With "-O2" flag**
-
-|                | search time, s | Speed Up (of default) |
-|----------------|----------------|-----------------------|
-| default rolHash AVX       | 1,830          | 1                     |
-| asm RolFunc   AVX        | 1,862          | 0,983                 |
-| asm insertion AVX  | 1,817          | 1,007                 |
-| fully asm rolHash AVX| 1,812          | 1,010                 |
-
-As we can see, implementing avxCmp really improved our performance.
-
-**With "-O2" flag**
-
-|                       | search time, s | Speed Up (of default) |
-|-----------------------|----------------|---------------------------|
-| default rolHash   NO_AVX | 3,019          | 1                         |
-| default rolHash   AVX | 1,830          | 1.650                         |
-| asm RolFunc   AVX | 1,862          | 1,621                     |
-| asm insertion AVX | 1,817          | 1,662                     |
-|  fully asm rolHash AVX| 1,812          | 1,666                     |
-
-
-I suppose that's everything we could achieve in optimization of simple ROL hash function. So let's move on to something more serious for futher ideas.
+First thing to notice is that even without any optimization flags compiler uses strcmp_avx instead of ordinary strcmp. Also we can see that FAQ6Hash takes significantly more time than strcmp_avx (45.6% vs 24.72%). So let's start with optimizing the FAQ6Hash itself! 
 
 ### FAQ6Hash optimization
 
-Using callgrind with FAQ6Hash we see slightly different picture:
-
-<img src="forReadme/valgrind2.jpg" width = 60%>
-
-As we can see, unlike the previous case, FAQ6Hash takes significantly more time than strcmp (45.6% vs 24.72%). So optimizing the hash function itself might really help.
-
-Let's write FAQ6 hash function fully on asm and run some tests:
+Let's take a closer look at this function. The whole hashing algorithm might be quite easily converted to assembly code. Indeed, it consits of bitwise shifts and xor instructions. So, why don't we just code our algorithm on assembler? Let's do it two ways: using asm insertion and fully writing hash function on nasm.
 
 <details>
 <summary>FAQ6Hash assembly code</summary>
@@ -463,6 +266,13 @@ _FAQ6:
 ~~~
 </details>
 
+
+This may seem strange at first sight. Asm insertion performs better than fully asm hash function. Here's what I think about this.
+Our fully asm hash function is written on NASM assembler. We compile it using "nasm -f ...", and then link it with the rest of obj files using g++. So, the optimization in this case is done by nasm (the "-Ox" nasm optimization flag is default since NASM 2.09). Check the following link to learn more about nasm optimization options: \
+https://nasm.us/doc/nasmdoc2.html                           
+
+On the other hand, the GNU uses GAS assembler. And when we use asm insertion, we just implement written on GAS asm code directly to the rest GNU generated GAS code. So it is still optimized by very powerful GNU optimizer. I suppose the optimization done by GNU is stronger than the NASM one. For this reason with "-O2" hash function with asm insertion performs better than the same function fully written on nasm.
+
 **Without "-O2" flag**
 
 |                | search time, s | Speed Up (of default) |
@@ -477,11 +287,32 @@ _FAQ6:
 | default FAQ6   | 3,519          | 1                     |
 | fully asm FAQ6 | 3,518          | 1                     |
 
-As we can see, our optimization can compete with "-O2" flag but can't really beat it. So now let's do something with our compare function.
+As we can see, our optimization can compete with "-O2" flag but can't really beat it. 
+
+Note that another significant function within the search function is the comparison of keys. Since our hash table has not really optimal size (the reason was stated in the first part), we have quite a few collisions. And collisions cause comparisons. So it would be good to find the way to optimize compare function. 
+
+Let's just increase the size of all char arrays that hold our words to 32 bytes (since according to text analysis, maximum word length is 18). 
+And now we can write our own compare function using avx instructions.
 
 ### AVX compare
 
-As in our previous case, let's implement avxCmp function and see the results:
+Now as all of our char arrays are 32 bytes long, it's very convenient to load them in __m256i bit vectors and compare all bytes simultaneously. New compare function looks like this:
+
+~~~C++
+int avxCmp(__m256i* str1, __m256i* str2) {
+
+    __m256i first = *str1;
+    __m256i second = *str2;
+    
+    __m256i cmp = _mm256_cmpeq_epi8 (first, second);
+    int mask = _mm256_movemask_epi8 (cmp);
+
+    return (mask - 0xffffffff);
+}
+
+~~~
+
+Let's run tests once again:
 
 **With "-O2" flag**
 
@@ -490,7 +321,7 @@ As in our previous case, let's implement avxCmp function and see the results:
 | default FAQ6   AVX| 2,161          | 1                     |
 | fully asm FAQ6 AVX| 2,127          | 1,016                 |
 
-Now let's sum up the results:
+Now let's sum up what we have for now:
 
 **With "-O2" flag**
 
@@ -503,8 +334,12 @@ Now let's sum up the results:
 
 So, the current best for now is fully asm FAQ6 with hand written avxCmp function.
 
-Now let's try something completely different: what if we replace our FAQ6Hash function with built in CRC32 hash? Let's try it out!
+Now let's try something completely different: what if we replace our FAQ6Hash function with built in CRC32 hash? Here is the diagram for CRC32:
 
+<img src="diagrams/CRC32Hash.png" width = 60%>
+
+The dispersion of CRC32 is ...
+    
 <details>
 <summary>CRC32 asm code</summary>
 
@@ -525,10 +360,12 @@ Now let's try something completely different: what if we replace our FAQ6Hash fu
 ~~~
 </details>
 
-|                   | search time, s | relative Speed Up     | absolute Speed up (of default FAQ6 with "-O2" NO_AVX)
-|-------------------|----------------|-----------------------|-----------------------------------------------------
-| fully asm FAQ6 AVX| 2,127          | 1                     | 1,654
-| _crc32         AVX| 1,183          | 1,798                 | 2,975
+|                   | search time, s | relative Speed Up                    | absolute Speed up* 
+|-------------------|----------------|--------------------------------------|-----------------------------------------------------
+| fully asm FAQ6 AVX| 2,127          | 1                                    | 1,654
+| _crc32         AVX| 1,183          | 1,798                                | 2,975
+
+*of default FAQ6 with "-O2" NO_AVX
 
 As expected, CRC32 implementation really speeds our search up. So, now we have very fast hash function and quite good comparison function. The only thing left is to change the size of our Hash Table to reduce collisions. 
 
@@ -536,18 +373,20 @@ As expected, CRC32 implementation really speeds our search up. So, now we have v
 
 Let's increase our Hash Table size by a factor of 1.5 (I've tried several variants and this scale factor gives the best speed up):
 
-|                    | search time, s | relative Speed Up     | absolute Speed up (of default FAQ6 with "-O2" NO_AVX OLD_SIZE)
+|                    | search time, s | relative Speed Up     | absolute Speed up* 
 |--------------------|----------------|-----------------------|-----------------------------------------------------
 | _crc32 AVX OLD_SIZE| 1,183          | 1                     | 2,975
 | _crc32 AVX NEW_SIZE| 1,159          | 1,021                 | 3,036
 
+*of default FAQ6 with "-O2" NO_AVX OLD_SIZE
 
-So, we could get over a 3x speed up factor! Note that last optimization didn't improve the performance that much, therefore we have reason to believe that our optimizations are approaching the limit. 
+So, we could get over a 3x speed up factor! Note that our last optimization didn't improve the performance that much, therefore we have reason to believe that our optimizations are approaching the limit. 
 
 ## Conclusion
 
 In this project we implemented our own Hash Table, researched 7 Hash Functions, ranked them according to their performance. \
-After that we tried to optimize table search function using 5 general approaches: \
+After that we tried to optimize table search function using 5 general approaches: 
+
 1) assembly insertions
 2) fully written on asm functions
 3) avx instructions 
