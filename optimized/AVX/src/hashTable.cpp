@@ -155,9 +155,11 @@ void TableToCsv(HashTable * hashTable, FILE * CsvFile) {
     assert(hashTable != NULL);
     assert(CsvFile   != NULL);
 
+    fprintf(CsvFile, "index,list_len\n");
+
     size_t len = hashTable->size;
     for (size_t i = 0; i < len; i++) {
-        fprintf(CsvFile, "%zu, %zu\n", i, hashTable->tableItems[i].peers);
+        fprintf(CsvFile, "%zu,%zu\n", i, hashTable->tableItems[i].peers);
     }
 }
 

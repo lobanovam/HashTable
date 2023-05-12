@@ -13,7 +13,7 @@ const char* InputFilename = "./textData/Text.txt";
 const char* InputMode = "r";
 const char* CsvMode = "w";
 
-const char* CsvFilename  = "./tabulars/rolHash.csv";
+const char* CsvFilename  = "./tabulars/CRC32Hash.csv";
 
 int main() {
     log("--------------------START LOGS--------------------\n\n");
@@ -32,7 +32,7 @@ int main() {
     Set256Word(&text);
     log("#done Set256Word()\n\n");
 
-    HashTable * hashTable = tableCTOR(text.wordsCt / 15 , rolHash);
+    HashTable * hashTable = tableCTOR(text.wordsCt / 15 , _crc32);
     log("#done tableCTOR()\n\n");
 
     SetHashTable(hashTable, &text);

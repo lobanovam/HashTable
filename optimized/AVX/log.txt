@@ -11,7 +11,7 @@
 #done SetHashTable()
 
 ---
- ordinary ROL hash time: 3.283039
+ ordinary ROL hash time: 2.476563
 ---
 #done TableToCsv()
 

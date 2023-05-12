@@ -17,7 +17,8 @@ enum HashFuncsEnum {
     ASCIISUM_HASH,
     ROL_HASH,
     ROR_HASH,
-    FAQ6_HASH
+    FAQ6_HASH,
+    CRC32_HASH,
 };
 
 const char* CsvFilenames[] = {
@@ -28,6 +29,7 @@ const char* CsvFilenames[] = {
     "./tabulars/rolHash.csv",
     "./tabulars/rorHash.csv",
     "./tabulars/FAQ6Hash.csv",
+    "./tabulars/CRC32Hash.csv"
 };
 
 size_t (*HashFuncsArr[])(const char * word) = {
@@ -37,10 +39,11 @@ size_t (*HashFuncsArr[])(const char * word) = {
     AsciiSumHash,
     rolHash,
     rorHash,
-    FAQ6Hash
+    FAQ6Hash,
+    _crc32
 };
 
-const int HASH_FUNC = ONE_HASH;
+const int HASH_FUNC = FAQ6_HASH;
 
 int main() {
     log("--------------------START LOGS--------------------\n\n");
@@ -92,6 +95,7 @@ void SetHashTable(HashTable * hashTable, Text * text) {
     for (size_t i = 0; i < wordsCt; i++) {
 
         char* str = wordsArr[i];
+        //printf("will be trying to insert %s\n", str);
         TableInsert(hashTable, str);
     }
 }

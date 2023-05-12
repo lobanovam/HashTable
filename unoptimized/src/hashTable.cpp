@@ -45,7 +45,7 @@ void TableInsert(HashTable * hashTable, const char * word) {
     Node* prevNode = hashTable->tableItems[index].node;
     
     if (!prevNode) {
-
+        //printf("inserted %s\n", word);
         hashTable->tableItems[index].peers++;
         hashTable->tableItems[index].node = CreateNode(word);
         return;
@@ -53,8 +53,10 @@ void TableInsert(HashTable * hashTable, const char * word) {
 
     int inserted = ListPushBack(prevNode, word);
 
-    if (inserted) 
+    if (inserted) {
+        //printf("inserted %s\n", word);
         hashTable->tableItems[index].peers++;
+    }
 
 }
 

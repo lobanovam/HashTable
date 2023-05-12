@@ -5,6 +5,9 @@
 #include <string.h>
 #include <stdint.h>
 
+extern "C" size_t _crc32(const char* word);
+
+
 //________________________________HashFuncs()
 size_t OneHash(const char * word);
 size_t AsciiHash(const char * word);
