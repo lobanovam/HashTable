@@ -23,6 +23,8 @@ So, when multiple elements are hashed into the same slot index, these elements a
 
 <img src="forReadme/hashTableExample" width = 60%>
 
+img src: https://shorturl.at/dO357
+
 For more detailed information please visit the links below: \
 https://en.wikipedia.org/wiki/Hash_table \
 https://www.geeksforgeeks.org/separate-chaining-collision-handling-technique-in-hashing 
