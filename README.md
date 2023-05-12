@@ -19,7 +19,7 @@ The situation where a newly inserted key maps to an already occupied slot in the
 
 To solve collisions  i use **separate chaining** technique. \
 The idea behind separate chaining is to implement the array as a **linked list** called a chain. \
-So, when multiple elements are hashed into the same slot index, these elements are inserted into a singly-linked list which is known as a chain.
+So, when multiple elements are hashed into the same slot index, these elements are inserted into a singly-linked list (chain). 
 
 <img src="forReadme/hashTableExample" width = 60%>
 
