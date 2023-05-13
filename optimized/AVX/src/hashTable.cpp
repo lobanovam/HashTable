@@ -182,7 +182,7 @@ void IndexDump(HashTable * hashTable, const char * key) {
     printf("\n");
 }
 
-int avxCmp(__m256i* str1, __m256i* str2) {
+int __attribute__ ((noinline)) avxCmp(__m256i* str1, __m256i* str2) {
 
     __m256i first = *str1;
     __m256i second = *str2;

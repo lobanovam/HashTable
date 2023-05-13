@@ -451,7 +451,7 @@ Let's take one last look at the profiler:
 
 <img src="forReadme/valgrind3.jpg" width = 60%>
 
-**Note**: "0x00...470" function is _crc32 (written on asm hash function). Callgrind just can't find its name.
+**Note**: "0x00...420" function is _crc32 (written on asm hash function). Callgrind just can't find its name.
                                                                                                                  
 As we can see, hash function now takes less than 13% of time (we've started with 45.6%). Also notice that our new comparison function (avxCmp) simply disappeared from this list. Now it's not even in the top 20.                                                                                                       
 
