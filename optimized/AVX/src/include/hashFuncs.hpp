@@ -8,7 +8,7 @@
 //____________________________asm_HashFuncs()
 extern "C" size_t _RolHash(const char * word);
 extern "C" size_t _FAQ6(const char * word);
-extern "C" size_t _crc32(const char* word);
+extern "C" size_t __attribute__ ((noinline)) _crc32(const char* word);
 //___________________________________________
 
 //______________________________C_HashFuncs()
