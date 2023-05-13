@@ -216,7 +216,7 @@ Let's order them according to their performance:
 
 ## Search optimization 
 
-Let's try to optimize search in out Hash Table. 
+Let's try to optimize search in our Hash Table. 
 
 **Testing method:** \
 Each test consists of a series of 10 trials, in each of which the search function runs $10^8$ times, going through all the words in the Hash Table.
@@ -226,11 +226,11 @@ Then the mean time of all 10 trials is calculated (using <time.h>) and put in lo
 
 I decided to stick with FAQ6 hash function since it outperformed the rest hash functions in terms of distribution. 
 
-Here's what a valgrind profiler tells us:
+Here's what a callgrind profiler tells us:
 
 <img src="forReadme/valgrind2.jpg" width = 60%>
 
-First thing to notice is that even without any optimization flags compiler uses strcmp_avx instead of ordinary strcmp. Also we can see that FAQ6Hash takes significantly more time than strcmp_avx (45.6% vs 24.72%). So let's start with optimizing the FAQ6Hash itself! 
+First thing to notice is that compiler uses strcmp_avx instead of ordinary strcmp. Also we can see that FAQ6Hash takes significantly more time than strcmp_avx (45.6% vs 24.72%). So let's start with optimizing the FAQ6Hash itself! 
 
 ### FAQ6Hash optimization
 
